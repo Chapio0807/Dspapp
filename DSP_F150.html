@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PALOMO SOUND - DSP F150</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a00e8;color:#fff;font-family:Arial,sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 28px);pointer-events:none;z-index:0}
+.top{background:#f5c518;color:#000;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}
+.top b{font-size:22px}
+.top span{font-size:14px;font-weight:900}
+.wrap{position:relative;z-index:1;padding:12px;padding-bottom:30px}
+.title{text-align:center;font-size:13px;letter-spacing:2px;margin:6px 0 10px}
+.badge{text-align:center;background:#f5c518;color:#000;padding:8px;border-radius:20px;font-size:12px;font-weight:900;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.tile{background:#0a00e8;border:2px solid #f5c518;border-radius:6px;padding:10px 2px 0;text-align:center;cursor:pointer;min-height:72px;display:flex;flex-direction:column;justify-content:space-between}
+.tile.active{background:#f5c518;color:#000;box-shadow:0 0 18px #f5c518}
+.tile .ico{font-size:26px}
+.tile .lbl{background:#f5c518;color:#000;font-size:8px;font-weight:900;padding:5px 1px;margin-top:8px}
+.tile.active .lbl{background:#000;color:#f5c518}
+.card{background:rgba(0,0,120,.92);border:2px solid #f5c518;border-radius:10px;padding:14px;margin-bottom:12px;display:none}
+.card.show{display:block}
+.card h2{font-size:14px;color:#f5c518;margin-bottom:10px}
+.card h3{font-size:12px;margin:10px 0 6px}
+.song{width:100%;text-align:left;background:#0000b8;border:2px solid #f5c518;color:#fff;padding:12px;border-radius:8px;margin-bottom:8px;cursor:pointer;font-size:13px;font-weight:700}
+.song.playing{background:#f5c518;color:#000}
+.btn{padding:13px 6px;border-radius:8px;border:2px solid #f5c518;background:#0000b8;color:#fff;font-weight:900;font-size:12px;cursor:pointer;text-align:center}
+.btn.active{background:#f5c518;color:#000}
+.btn small{display:block;font-weight:400;opacity:.8;font-size:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{font-size:12px;display:flex;justify-content:space-between;margin:10px 0 4px}
+label b{color:#f5c518}
+input[type=range]{width:100%;accent-color:#f5c518}
+audio,video{width:100%;margin-top:10px;border-radius:8px}
+video{background:#000;display:none}
+.filebtn{display:block;text-align:center;background:#f5c518;color:#000;padding:11px;border-radius:8px;font-weight:900;font-size:12px;margin-top:10px}
+.small{font-size:11px;opacity:.8;text-align:center;margin-top:7px;line-height:1.4}
+.now{text-align:center;font-weight:900;color:#f5c518;margin:6px 0;font-size:13px}
+.ver{text-align:center;font-size:11px;opacity:.7;margin-top:14px}
+select{width:100%;padding:11px;background:#0000b8;color:#fff;border:2px solid #f5c518;border-radius:8px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="top"><b>PALOMO SOUND</b><span>DSP F150</span><div>12V 🔋 🔊</div></div>
+<div class="wrap">
+<div class="title">PALOMO SOUND - DSP INMENSO PARA LA F150</div>
+<div class="badge" id="modoActual">MODO: 🚛 ADENTRO - CABINA</div>
+<div class="grid">
+<div class="tile active" onclick="showCard('cardMusica',this)"><div class="ico">🎵</div><div class="lbl">MUSIC / VIDEO</div></div>
+<div class="tile" onclick="showCard('cardRouting',this)"><div class="ico">LR</div><div class="lbl">ROUTING CH</div></div>
+<div class="tile" onclick="showCard('cardGain',this)"><div class="ico">🔊</div><div class="lbl">GAIN</div></div>
+<div class="tile" onclick="showCard('cardCross',this)"><div class="ico">📐</div><div class="lbl">CROSSOVER</div></div>
+<div class="tile" onclick="showCard('cardLimiter',this)"><div class="ico">🛡️</div><div class="lbl">LIMITER</div></div>
+</div>
+<div class="grid">
+<div class="tile" onclick="showCard('cardEqIn',this)"><div class="ico">🎚️</div><div class="lbl">EQ IN</div></div>
+<div class="tile" onclick="showCard('cardEqCh',this)"><div class="ico">📈</div><div class="lbl">EQ CHANNEL</div></div>
+<div class="tile" onclick="showCard('cardPolarity',this)"><div class="ico">🔄</div><div class="lbl">POLARITY</div></div>
+<div class="tile" onclick="showCard('cardDelay',this)"><div class="ico">⏱️</div><div class="lbl">DELAY</div></div>
+<div class="tile" onclick="showCard('cardMonitor',this)"><div class="ico">🖥️</div><div class="lbl">MONITOR</div></div>
+</div>
+
+<div class="card show" id="cardMusica">
+<h2>🎵 TU MÚSICA Y VIDEOS - AUTO LISTA</h2>
+<div class="now" id="nowPlaying">🎵 Dale Play a una rola</div>
+<div id="lista"><p style="text-align:center">Cargando tus rolas...</p></div>
+<audio id="player" controls></audio>
+<video id="videoPlayer" controls playsinline></video>
+<label class="filebtn" for="file">📂 O ELEGIR MP3 / MP4 DE TU CEL</label>
+<input type="file" id="file" accept="audio/*,video/*" hidden>
+<p class="small">Nomás sube el mp3 o mp4 a GitHub y ya sale solo aquí.</p>
+</div>
+
+<div class="card" id="cardRouting">
+<h2>ROUTING CH / ¿DÓNDE ESTÁS?</h2>
+<div class="grid2">
+<button class="btn" data-modo="afuera" onclick="setModo('afuera',this)">🔊 AFUERA<small>RETUMBE MACHÍN</small></button>
+<button class="btn active" data-modo="adentro" onclick="setModo('adentro',this)">🚛 ADENTRO<small>CABINA LIMPIA</small></button>
+<button class="btn" data-modo="noche" onclick="setModo('noche',this)">🌙 NOCHE<small>BAJITO</small></button>
+<button class="btn" data-modo="antro" onclick="setModo('antro',this)">🪩 ANTRO<small>PUNCH</small></button>
+</div>
+<h3>🏛️ ESPACIO / CONCERT HALL</h3>
+<div class="grid2">
+<button class="btn" data-modo="hall" onclick="setModo('hall',this)">🏛️ CONCERT HALL</button>
+<button class="btn" data-modo="iglesia" onclick="setModo('iglesia',this)">⛪ IGLESIA</button>
+<button class="btn" data-modo="estadio" onclick="setModo('estadio',this)">🏟️ ESTADIO</button>
+<button class="btn" data-modo="cuarto" onclick="setModo('cuarto',this)">🏠 CUARTO</button>
+</div>
+<label>CUÁNTO ECO <b id="vEco">10%</b></label>
+<input type="range" id="eco" min="0" max="100" value="10">
+<label>TAMAÑO DE SALA <b id="vSala">MEDIANA</b></label>
+<input type="range" id="sala" min="1" max="3" value="2">
+</div>
+
+<div class="card" id="cardGain">
+<h2>GAIN - VOLUMEN Y FUERZA</h2>
+<label>VOLUMEN <b id="vVol">85%</b></label>
+<input type="range" id="vol" min="0" max="100" value="85">
+<label>BASS BOOST <b id="vBoost">60%</b></label>
+<input type="range" id="boost" min="0" max="100" value="60">
+<div class="grid2" style="margin-top:12px">
+<button class="btn" id="btnLoud" onclick="toggleLoud()">🔥 LOUDNESS: OFF</button>
+<button class="btn active" id="btnBassBoost" onclick="toggleBassBoost()">💥 BASS BOOST: ON</button>
+</div>
+</div>
+
+<div class="card" id="cardCross">
+<h2>CROSSOVER</h2>
+<label>SUB / RETUMBE <b id="vSub">+6 dB</b></label>
+<input type="range" id="sub" min="-12" max="15" value="6">
+<label>BAJO <b id="vBass">+5 dB</b></label>
+<input type="range" id="bass" min="-12" max="12" value="5">
+<label>MEDIOS / VOZ <b id="vMid">+2 dB</b></label>
+<input type="range" id="mid" min="-12" max="12" value="2">
+<label>AGUDOS <b id="vHigh">+4 dB</b></label>
+<input type="range" id="high" min="-12" max="12" value="4">
+</div>
+
+<div class="card" id="cardLimiter">
+<h2>LIMITER - PROTECCIÓN</h2>
+<label>LIMITER <b id="vLim">ON - 90%</b></label>
+<input type="range" id="lim" min="50" max="100" value="90" oninput="document.getElementById('vLim').textContent='ON - '+this.value+'%'">
+</div>
+
+<div class="card" id="cardEqIn">
+<h2>EQ IN - GÉNERO</h2>
+<div class="grid2">
+<button class="btn" onclick="setGenero('corrido',this)">🎺 CORRIDO</button>
+<button class="btn" onclick="setGenero('banda',this)">🎷 BANDA</button>
+<button class="btn" onclick="setGenero('norteno',this)">🪗 NORTEÑO</button>
+<button class="btn" onclick="setGenero('trap',this)">🔥 TRAP</button>
+<button class="btn" onclick="setGenero('reggaeton',this)">💃 REGGAETÓN</button>
+<button class="btn" onclick="setGenero('plano',this)">⚪ PLANO</button>
+</div>
+</div>
+
+<div class="card" id="cardEqCh">
+<h2>EQ CHANNEL - CANAL</h2>
+<select id="canal" onchange="document.getElementById('canalTxt').textContent='Canal activo: '+this.value">
+<option>FRONT L - Bocina Delantera Izq</option><option>FRONT R - Bocina Delantera Der</option><option>REAR L - Bocina Trasera Izq</option><option>REAR R - Bocina Trasera Der</option><option>SUB - Bajo / Subwoofer</option><option>TWEETER - Agudos</option>
+</select>
+<p class="small" id="canalTxt">Canal activo: FRONT L</p>
+</div>
+
+<div class="card" id="cardPolarity">
+<h2>POLARITY - FASE 0° / 180°</h2>
+<div class="grid2">
+<button class="btn active" id="pol0" onclick="setPol(0)">0° NORMAL</button>
+<button class="btn" id="pol180" onclick="setPol(180)">180° INVERTIDA</button>
+</div>
+<p class="small" id="polTxt">Si el bajo se escucha hueco, cámbiale a 180°</p>
+</div>
+
+<div class="card" id="cardDelay">
+<h2>DELAY - TIEMPO</h2>
+<label>DELAY TRASERAS <b id="vDelay">2.0 ms</b></label>
+<input type="range" id="delay" min="0" max="20" value="2" step="0.5" oninput="document.getElementById('vDelay').textContent=this.value+' ms'">
+<label>DELAY SUB <b id="vDelaySub">4.0 ms</b></label>
+<input type="range" id="delaySub" min="0" max="20" value="4" step="0.5" oninput="document.getElementById('vDelaySub').textContent=this.value+' ms'">
+</div>
+
+<div class="card" id="cardMonitor">
+<h2>MONITOR - NIVELES</h2>
+<div style="background:#000;padding:12px;border-radius:8px;border:1px solid #f5c518">
+<div style="display:flex;justify-content:space-between;font-size:11px"><span>IZQ</span><span>-12 dB</span></div>
+<div style="height:14px;background:#222;margin:6px 0"><div id="barL" style="height:100%;width:60%;background:#f5c518"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:11px"><span>DER</span><span>-12 dB</span></div>
+<div style="height:14px;background:#222;margin:6px 0"><div id="barR" style="height:100%;width:60%;background:#f5c518"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:11px"><span>SUB</span><span>-6 dB</span></div>
+<div style="height:14px;background:#222;margin:6px 0"><div id="barS" style="height:100%;width:80%;background:#ff2d2d"></div></div>
+</div>
+<p class="small">Tip AFUERA: AFUERA + BASS BOOST ON + Sub +12 + Boost 95% = retumba la cuadra.</p>
+</div>
+
+<div class="ver">PALOMO SOUND - App Ver: 1.3.5 - DSP F150</div>
+</div>
+
+<script>
+function showCard(id,el){
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+  document.querySelectorAll('.tile').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
+function setPol(v){
+  document.getElementById('pol0').classList.toggle('active',v==0);
+  document.getElementById('pol180').classList.toggle('active',v==180);
+  document.getElementById('polTxt').textContent=v==0?'Polaridad 0° - Normal':'Polaridad 180° - Invertida, el bajo pega más fuerte';
+}
+const listaDiv=document.getElementById('lista');
+const player=document.getElementById('player');
+const videoPlayer=document.getElementById('videoPlayer');
+let canciones=[]; let currentIdx=-1;
+const respaldo=[
+  {titulo:'EL ALFARERO Raul Beltran',archivo:'EL-ALFARERO-Raúl Beltran.mp3',esVideo:false},
+  {titulo:'El Coyote Relampagos Del Norte',archivo:'El-Coyote-Relampagos-Del-Norte.mp3',esVideo:false},
+  {titulo:'El Noble Julian Mercado',archivo:'El-Noble-Julian-Mercado.mp3',esVideo:false},
+  {titulo:'El Quemador Carlos y Jose',archivo:'El-Quemador-Carlos-y-Jose.mp3',esVideo:false}
+];
+async function cargarRolas(){
+  try{
+    const res=await fetch('https://api.github.com/repos/Chapio0807/Dspapp/contents/');
+    if(!res.ok) throw new Error('api');
+    const files=await res.json();
+    const filtradas=files.filter(f=>{const n=f.name.toLowerCase(); return n.endsWith('.mp3')||n.endsWith('.mp4');});
+    if(filtradas.length==0) throw new Error('vacio');
+    canciones=filtradas.map(f=>({titulo:f.name.replace(/\.(mp3|mp4)$/i,'').replaceAll('-',' ').replaceAll('_',' '),archivo:f.name,esVideo:f.name.toLowerCase().endsWith('.mp4')}));
+  }catch(e){
+    canciones=respaldo;
+  }
+  renderLista();
+}
+function renderLista(){
+  listaDiv.innerHTML='';
+  canciones.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='song'+(i===currentIdx?' playing':'');
+    b.innerHTML='<b>'+(c.esVideo?'🎬 VIDEO ':'🎵 ROLA ')+(i+1)+'</b>'+c.titulo;
+    b.onclick=()=>playIdx(i);
+    listaDiv.appendChild(b);
+  });
+}
+function playIdx(i){
+  currentIdx=i; renderLista();
+  document.getElementById('nowPlaying').textContent='▶️ SONANDO: '+canciones[i].titulo;
+  if(canciones[i].esVideo){player.pause();player.style.display='none';videoPlayer.style.display='block';videoPlayer.src=encodeURI(canciones[i].archivo);videoPlayer.play().catch(()=>{});initAudioFor(videoPlayer);}
+  else{videoPlayer.pause();videoPlayer.style.display='none';player.style.display='block';player.src=encodeURI(canciones[i].archivo);player.play().catch(()=>{});initAudio();}
+}
+cargarRolas();
+document.getElementById('file').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const esVideo=f.type.startsWith('video');
+  document.getElementById('nowPlaying').textContent='▶️ SONANDO: '+f.name;
+  if(esVideo){player.pause();player.style.display='none';videoPlayer.style.display='block';videoPlayer.src=URL.createObjectURL(f);videoPlayer.play().catch(()=>{});initAudioFor(videoPlayer);}
+  else{videoPlayer.pause();videoPlayer.style.display='none';player.style.display='block';player.src=URL.createObjectURL(f);player.play().catch(()=>{});initAudio();}
+};
+let ctx,src,subF,bassF,midF,highF,master,dry,wet,convolver,loud=false,bb=true;
+function makeImpulse(dur,decay){const rate=ctx.sampleRate,len=rate*dur,imp=ctx.createBuffer(2,len,rate);for(let c=0;c<2;c++){const d=imp.getChannelData(c);for(let i=0;i<len;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}}return imp;}
+function setupGraph(el){ctx=new (window.AudioContext||window.webkitAudioContext)();src=ctx.createMediaElementSource(el);subF=ctx.createBiquadFilter();subF.type='lowshelf';subF.frequency.value=60;bassF=ctx.createBiquadFilter();bassF.type='lowshelf';bassF.frequency.value=180;midF=ctx.createBiquadFilter();midF.type='peaking';midF.frequency.value=1000;midF.Q.value=1;highF=ctx.createBiquadFilter();highF.type='highshelf';highF.frequency.value=6000;master=ctx.createGain();master.gain.value=0.85;dry=ctx.createGain();dry.gain.value=1;wet=ctx.createGain();wet.gain.value=0;convolver=ctx.createConvolver();convolver.buffer=makeImpulse(1.2,2.0);src.connect(subF);subF.connect(bassF);bassF.connect(midF);midF.connect(highF);highF.connect(master);master.connect(dry);dry.connect(ctx.destination);master.connect(convolver);convolver.connect(wet);wet.connect(ctx.destination);updateAll();}
+function initAudio(){try{if(!ctx) setupGraph(player); if(ctx) ctx.resume();}catch(e){}}
+function initAudioFor(el){try{if(!ctx) setupGraph(el); if(ctx) ctx.resume();}catch(e){}}
+function updateAll(){
+  if(!ctx) return;
+  const boost=+document.getElementById('boost').value/100;
+  subF.gain.value=+document.getElementById('sub').value+(bb?boost*6:0);
+  bassF.gain.value=+document.getElementById('bass').value;
+  midF.gain.value=+document.getElementById('mid').value;
+  highF.gain.value=+document.getElementById('high').value;
+  master.gain.value=(document.getElementById('vol').value/100)*(loud?1.25:1);
+  document.getElementById('vSub').textContent=(+document.getElementById('sub').value>=0?'+':'')+document.getElementById('sub').value+' dB';
+  document.getElementById('vBass').textContent=(+document.getElementById('bass').value>=0?'+':'')+document.getElementById('bass').value+' dB';
+  document.getElementById('vMid').textContent=(+document.getElementById('mid').value>=0?'+':'')+document.getElementById('mid').value+' dB';
+  document.getElementById('vHigh').textContent=(+document.getElementById('high').value>=0?'+':'')+document.getElementById('high').value+' dB';
+  document.getElementById('vBoost').textContent=document.getElementById('boost').value+'%';
+  document.getElementById('vVol').textContent=document.getElementById('vol').value+'%';
+  updateEco();
+  const v=+document.getElementById('vol').value;
+  document.getElementById('barL').style.width=v+'%'; document.getElementById('barR').style.width=(v-5)+'%'; document.getElementById('barS').style.width=Math.min(100,v+10)+'%';
+}
+function updateEco(){if(!ctx) return; const eco=+document.getElementById('eco').value/100; document.getElementById('vEco').textContent=document.getElementById('eco').value+'%'; wet.gain.value=eco; dry.gain.value=1-eco*0.35;}
+['sub','bass','mid','high','boost','vol','eco'].forEach(id=>document.getElementById(id).oninput=updateAll);
+document.getElementById('sala').oninput=()=>{const v=+document.getElementById('sala').value; document.getElementById('vSala').textContent=v==1?'CHICA':v==2?'MEDIANA':'GIGANTE'; if(ctx) convolver.buffer=makeImpulse(v==1?0.8:v==2?1.8:3.2,2.0);};
+function setVal(id,v){document.getElementById(id).value=v;}
+function setModo(modo,btn){
+  document.querySelectorAll('[data-modo]').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  initAudio(); const badge=document.getElementById('modoActual');
+  if(modo=='afuera'){setVal('sub',12);setVal('bass',10);setVal('mid',1);setVal('high',3);setVal('boost',95);setVal('vol',100);setVal('eco',15);badge.textContent='MODO: 🔊 AFUERA - RETUMBE MACHÍN';}
+  if(modo=='adentro'){setVal('sub',6);setVal('bass',5);setVal('mid',2);setVal('high',4);setVal('boost',60);setVal('vol',85);setVal('eco',10);badge.textContent='MODO: 🚛 ADENTRO - CABINA';}
+  if(modo=='noche'){setVal('sub',2);setVal('bass',1);setVal('mid',1);setVal('high',1);setVal('boost',20);setVal('vol',45);setVal('eco',5);badge.textContent='MODO: 🌙 NOCHE - BAJITO';}
+  if(modo=='antro'){setVal('sub',11);setVal('bass',9);setVal('mid',0);setVal('high',5);setVal('boost',85);setVal('vol',95);setVal('eco',25);badge.textContent='MODO: 🪩 ANTRO / CLUB';}
+  if(modo=='hall'){setVal('sub',5);setVal('bass',4);setVal('mid',3);setVal('high',6);setVal('eco',65);setVal('sala',3);document.getElementById('sala').dispatchEvent(new Event('input'));badge.textContent='MODO: 🏛️ CONCERT HALL';}
+  if(modo=='iglesia'){setVal('eco',85);setVal('sala',3);document.getElementById('sala').dispatchEvent(new Event('input'));badge.textContent='MODO: ⛪ IGLESIA';}
+  if(modo=='estadio'){setVal('sub',9);setVal('bass',7);setVal('mid',2);setVal('high',5);setVal('eco',55);setVal('sala',3);document.getElementById('sala').dispatchEvent(new Event('input'));badge.textContent='MODO: 🏟️ ESTADIO';}
+  if(modo=='cuarto'){setVal('eco',30);setVal('sala',1);document.getElementById('sala').dispatchEvent(new Event('input'));badge.textContent='MODO: 🏠 CUARTO';}
+  updateAll();
+}
+function setGenero(g,btn){
+  initAudio();
+  if(g=='corrido'){setVal('sub',7);setVal('bass',6);setVal('mid',3);setVal('high',4);}
+  if(g=='banda'){setVal('sub',10);setVal('bass',8);setVal('mid',2);setVal('high',2);}
+  if(g=='norteno'){setVal('sub',5);setVal('bass',4);setVal('mid',4);setVal('high',6);}
+  if(g=='trap'){setVal('sub',13);setVal('bass',9);setVal('mid',0);setVal('high',3);setVal('boost',90);}
+  if(g=='reggaeton'){setVal('sub',11);setVal('bass',8);setVal('mid',1);setVal('high',5);}
+  if(g=='plano'){setVal('sub',0);setVal('bass',0);setVal('mid',0);setVal('high',0);setVal('boost',0);}
+  updateAll();
+}
+function toggleLoud(){loud=!loud;document.getElementById('btnLoud').textContent=loud?'🔥 LOUDNESS: ON':'🔥 LOUDNESS: OFF';document.getElementById('btnLoud').classList.toggle('active',loud);updateAll();}
+function toggleBassBoost(){bb=!bb;document.getElementById('btnBassBoost').textContent=bb?'💥 BASS BOOST: ON':'💥 BASS BOOST: OFF';document.getElementById('btnBassBoost').classList.toggle('active',bb);updateAll();}
+player.addEventListener('ended',()=>{if(currentIdx+1<canciones.length) playIdx(currentIdx+1);});
+videoPlayer.addEventListener('ended',()=>{if(currentIdx+1<canciones.length) playIdx(currentIdx+1);});
+</script>
+</body>
+</html>
