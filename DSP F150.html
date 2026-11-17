@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PALOMO SOUND - DSP F150</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a00e8;color:#fff;font-family:Arial,sans-serif;min-height:100vh}
+/* FONDO CON BARRAS COMO EN LA FOTO */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 28px),linear-gradient(180deg,rgba(255,255,255,.04),transparent 60%);pointer-events:none;z-index:0}
+.top{background:#f5c518;color:#000;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}
+.top b{font-size:22px;letter-spacing:1px}
+.top span{font-size:14px;font-weight:900}
+.top .volt{font-size:13px;font-weight:900;display:flex;gap:6px;align-items:center}
+.batt{border:2px solid #000;width:28px;height:14px;position:relative;background:#00c853}
+.batt::after{content:'';position:absolute;right:-5px;top:3px;width:3px;height:8px;background:#000}
+.wrap{position:relative;z-index:1;padding:12px;padding-bottom:30px}
+.title{text-align:center;font-size:13px;letter-spacing:2px;margin:6px 0 10px;opacity:.9}
+.badge{text-align:center;background:#f5c518;color:#000;padding:8px;border-radius:20px;font-size:12px;font-weight:900;margin-bottom:12px}
+/* GRID COMO LA FOTO */
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:600px){.grid{grid-template-columns:repeat(5,1fr);gap:6px}}
+.tile{background:#0a00e8;border:2px solid #f5c518;border-radius:6px;padding:10px 2px 0;text-align:center;cursor:pointer;min-height:72px;display:flex;flex-direction:column;justify-content:space-between}
+.tile.active{background:#f5c518;color:#000;box-shadow:0 0 18px #f5c518}
+.tile .ico{font-size:26px;line-height:1}
+.tile .lbl{background:#f5c518;color:#000;font-size:8px;font-weight:900;padding:5px 1px;margin-top:8px;letter-spacing:.3px}
+.tile.active .lbl{background:#000;color:#f5c518}
+@media(max-width:420px){.tile .ico{font-size:20px}.tile .lbl{font-size:7px}}
+.card{background:rgba(0,0,120,.92);border:2px solid #f5c518;border-radius:10px;padding:14px;margin-bottom:12px;display:none}
+.card.show{display:block}
+.card h2{font-size:14px;color:#f5c518;margin-bottom:10px}
+.card h3{font-size:12px;color:#fff;margin:10px 0 6px}
+.song{width:100%;text-align:left;background:#0000b8;border:2px solid #f5c518;color:#fff;padding:12px;border-radius:8px;margin-bottom:8px;cursor:pointer;font-size:13px;font-weight:700}
+.song.playing{background:#f5c518;color:#000}
+.btn{padding:13px 6px;border-radius:8px;border:2px solid #f5c518;background:#0000b8;color:#fff;font-weight:900;font-size:12px;cursor:pointer;text-align:center}
+.btn.active{background:#f5c518;color:#000}
+.btn small{display:block;font-weight:400;opacity:.8;font-size:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{font-size:12px;display:flex;justify-content:space-between;margin:10px 0 4px}
+label b{color:#f5c518}
+input[type=range]{width:100%;accent-color:#f5c518}
+audio,video{width:100%;margin-top:10px;border-radius:8px}
+video{background:#000;display:none}
+.filebtn{display:block;text-align:center;background:#f5c518;color:#000;padding:11px;border-radius:8px;font-weight:900;font-size:12px;margin-top:10px}
+.small{font-size:11px;opacity:.8;text-align:center;margin-top:7px;line-height:1.4}
+.now{text-align:center;font-weight:900;color:#f5c518;margin:6px 0;font-size:13px}
+.ver{text-align:center;font-size:11px;opacity:.7;margin-top:14px}
+select{width:100%;padding:11px;background:#0000b8;color:#fff;border:2px solid #f5c518;border-radius:8px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="top"><b>PALOMO SOUND</b><span>DSP F150</span><div class="volt">12V <div class="batt"></div> 🔊</div></div>
+<div class="wrap">
+<div class="title">PALOMO SOUND - DSP INMENSO PARA LA F150</div>
+<div class="badge" id="modoActual">MODO: 🚛 ADENTRO - CABINA</div>
+
+<!-- GRID ESTILO AIRPLUS -->
+<div class="grid">
+<div class="tile active" onclick="showCard('cardMusica',this)"><div class="ico">🎵</div><div class="lbl">MUSIC / VIDEO</div></div>
+<div class="tile" onclick="showCard('cardRouting',this)"><div class="ico">LR</div><div class="lbl">ROUTING CH</div></div>
+<div class="tile" onclick="showCard('cardGain',this)"><div class="ico">🔊</div><div class="lbl">GAIN</div></div>
+<div class="tile" onclick="showCard('cardCross',this)"><div class="ico">📐</div><div class="lbl">CROSSOVER</div></div>
+<div class="tile" onclick="showCard('cardLimiter',this)"><div class="ico">🛡️</div><div class="lbl">LIMITER</div></div>
+</div>
+<div class="grid">
+<div class="tile" onclick="showCard('cardEqIn',this)"><div class="ico">🎚️</div><div class="lbl">EQ IN</div></div>
+<div class="tile" onclick="showCard('cardEqCh',this)"><div class="ico">📈</div><div class="lbl">EQ CHANNEL</div></div>
+<div class="tile" onclick="showCard('cardPolarity',this)"><div class="ico">🔄</div><div class="lbl">POLARITY</div></div>
+<div class="tile" onclick="showCard('cardDelay',this)"><div class="ico">⏱️</div><div class="lbl">DELAY</div></div>
+<div class="tile" onclick="showCard('cardMonitor',this)"><div class="ico">🖥️</div><div class="lbl">MONITOR</div></div>
+</div>
+
+<!-- MUSICA -->
+<div class="card show" id="cardMusica">
+<h2>🎵 TU MÚSICA Y VIDEOS - AUTO LISTA</h2>
+<div class="now" id="nowPlaying">🎵 Dale Play a una rola</div>
+<div id="lista"><p style="text-align:center;opacity:.8">Cargando tus rolas...</p></div>
+<audio id="player" controls></audio>
+<video id="videoPlayer" controls playsinline></video>
+<label class="filebtn" for="file">📂 O ELEGIR MP3 / MP4 DE TU CEL</label>
+<input type="file" id="file" accept="audio/*,video/*" hidden>
+<p class="small">Nomás sube el mp3 o mp4 a GitHub y ya sale solo aquí. Sin pegar código.</p>
+</div>
+
+<!-- ROUTING -->
+<div class="card" id="cardRouting">
+<h2>LR - ROUTING CH / ¿DÓNDE ESTÁS?</h2>
+<div class="grid2">
+<button class="btn" data-modo="afuera" onclick="setModo('afuera',this)">🔊 AFUERA<small>RETUMBE MACHÍN</small></button>
+<button class="btn active" data-modo="adentro" onclick="setModo('adentro',this)">🚛 ADENTRO<small>CABINA LIMPIA</small></button>
+<button class="btn" data-modo="noche" onclick="setModo('noche',this)">🌙 NOCHE<small>BAJITO</small></button>
+<button class="btn" data-modo="antro" onclick="setModo('antro',this)">🪩 ANTRO<small>PUNCH</small></button>
+</div>
+<h3>🏛️ ESPACIO / CONCERT HALL</h3>
+<div class="grid2">
+<button class="btn" data-modo="hall" onclick="setModo('hall',this)">🏛️ CONCERT HALL</button>
+<button class="btn" data-modo="iglesia" onclick="setModo('iglesia',this)">⛪ IGLESIA</button>
+<button class="btn" data-modo="estadio" onclick="setModo('estadio',this)">🏟️ ESTADIO</button>
+<button class="btn" data-modo="cuarto" onclick="setModo('cuarto',this)">🏠 CUARTO</button>
+</div>
+<label>CUÁNTO ECO <b id="vEco">10%</b></label>
+<input type="range" id="eco" min="0" max="100" value="10">
+<label>TAMAÑO DE SALA <b id="vSala">MEDIANA</b></label>
+<input type="range" id="sala" min="1" max="3" value="2">
+</div>
+
+<!-- GAIN -->
+<div class="card" id="cardGain">
+<h2>GAIN - VOLUMEN Y FUERZA</h2>
+<label>VOLUMEN <b id="vVol">85%</b></label>
+<input type="range" id="vol" min="0" max="100" value="85">
+<label>RETUMBE EXTRA - BASS BOOST <b id="vBoost">60%</b></label>
+<input type="range" id="boost" min="0" max="100" value="60">
+<div class="grid2" style="margin-top:12px">
+<button class="btn" id="btnLoud" onclick="toggleLoud()">🔥 LOUDNESS: OFF</button>
+<button class="btn active" id="btnBassBoost" onclick="toggleBassBoost()">💥 BASS BOOST: ON</button>
+</div>
+</div>
+
+<!-- CROSSOVER -->
+<div class="card" id="cardCross">
+<h2>CROSSOVER - SUB / BAJO / AGUDO</h2>
+<label>SUB / RETUMBE <b id="vSub">+6 dB</b></label>
+<input type="range" id="sub" min="-12" max="15" value="6">
+<label>BAJO <b id="vBass">+5 dB</b></label>
+<input type="range" id="bass" min="-12" max="12" value="5">
+<label>MEDIOS / VOZ <b id="vMid">+2 dB</b></label>
+<input type="range" id="mid" min="-12" max="12" value="2">
+<label>AGUDOS <b id="vHigh">+4 dB</b></label>
+<input type="range"
